@@ -20,6 +20,8 @@ The system is implemented using in-memory data stores and exposes REST APIs.
 ## Assumptions
 - In-memory storage is used (no database)
 - Single store (no multi-tenant support)
+- Users are identified via `userId` (passed as API parameter, no authentication required)
+- Each user has one active cart. The cart is maintained until checkout or explicit item removal, and is cleared upon successful checkout.
 - One active discount code at a time
 - Discount code provides a flat 10% off the entire order
 - Discount code is single-use
