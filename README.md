@@ -29,9 +29,58 @@ The system is implemented using in-memory data stores and exposes REST APIs.
 
 ---
 
-## Tech Stack (Planned)
-- Java 17
-- Spring Boot
-- Spring Web (REST APIs)
-- Swagger / OpenAPI
-- JUnit 5 & Mockito
+## Tech Stack
+- **Language**: Java 17
+- **Framework**: Spring Boot 4.0.1
+- **Build Tool**: Maven
+- **API Documentation**: Springdoc OpenAPI (Swagger UI)
+- **Testing**: JUnit 5, Mockito
+- **In-Memory Storage**: ConcurrentHashMap, AtomicInteger
+
+---
+
+## How to Run
+
+### Prerequisites
+- Java 17 or higher
+- Maven 3.6+ (or use system Maven)
+
+### Steps
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/fakirmohanpatra/ecommerce-store-api.git
+   cd ecommerce-store-api
+   ```
+
+2. **Build the project**
+   ```bash
+   mvn clean install
+   ```
+
+3. **Run the application**
+   ```bash
+   mvn spring-boot:run
+   ```
+
+4. **Access the application**
+   - API Base URL: `http://localhost:8080`
+   - Swagger UI: `http://localhost:8080/swagger-ui.html`
+   - API Docs: `http://localhost:8080/api-docs`
+
+### Run Tests
+```bash
+mvn test
+```
+
+---
+
+## Configuration
+
+The application can be configured via `application.yml`:
+
+```yaml
+app:
+  coupon:
+    nth-order: 5          # Generate coupon every 5th order
+    discount-percentage: 10  # 10% discount
+```
