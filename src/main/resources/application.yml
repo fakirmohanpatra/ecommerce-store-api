@@ -1,0 +1,19 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ecommerce-store-api
+
+app:
+  coupon:
+    nth-order: 5  # Generate coupon on every 5th order
+    discount-percentage: 10  # 10% discount
+
+# Swagger/OpenAPI Configuration
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
