@@ -69,7 +69,7 @@ public class OrderServiceImpl implements OrderService {
                 String errorMessage = switch (validationResult) {
                     case NO_ACTIVE_COUPON -> "No active coupon available.";
                     case INVALID_CODE -> "Invalid coupon code: " + couponCode + ". Please check the active coupon code.";
-                    case ALREADY_USED -> "Coupon code already used: " + couponCode + ". Each coupon can only be used once.";
+                    case ALREADY_USED -> "Coupon code already used: " + couponCode;
                     default -> "Invalid coupon code: " + couponCode;
                 };
                 throw new CouponValidationException(errorMessage);
