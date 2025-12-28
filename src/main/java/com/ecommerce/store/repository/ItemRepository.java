@@ -71,15 +71,25 @@ public class ItemRepository implements IItemRepository {
     }
     
     /**
-     * Decrease stock for an item by 1.
+     * Decrease stock for an item by specified quantity.
      * Thread-safe operation using ConcurrentHashMap.
      */
     @Override
-    public void decreaseStock(UUID itemId) {
+    public void decreaseStock(UUID itemId, int quantity) {
         Item item = dataStore.items.get(itemId);
-        if (item != null && item.getStock() > 0) {
-            item.setStock(item.getStock() - 1);
+        if (item != null && item.getStock() >= quantity) {
+            item.setStock(item.getStock() - quantity);
         }
+    }
+    
+    /**
+     * Decrease stock for an item by 1.
+     * Thread-safe operation using ConcurrentHashMap.
+     * @deprecated Use decreaseStock(UUID itemId, int quantity) instead
+     */
+    @Override
+    public void decreaseStock(UUID itemId) {
+        decreaseStock(itemId, 1);
     }
     
     /**

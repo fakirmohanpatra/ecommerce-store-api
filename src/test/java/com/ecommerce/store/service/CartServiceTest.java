@@ -72,7 +72,6 @@ class CartServiceTest {
         assertEquals(BigDecimal.valueOf(20.00), cartItem.getSubtotal());
 
         verify(cartRepository).save(emptyCart);
-        verify(itemRepository).decreaseStock(itemId);
     }
 
     @Test
@@ -102,7 +101,6 @@ class CartServiceTest {
         assertEquals(BigDecimal.valueOf(60.00), response.getTotalAmount()); // 15 * 4
 
         verify(cartRepository).save(cart);
-        verify(itemRepository).decreaseStock(itemId);
     }
 
     @Test

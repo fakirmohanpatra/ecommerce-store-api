@@ -71,12 +71,14 @@ Accept: application/json
   {
     "itemId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
     "name": "Laptop",
-    "price": 999.99
+    "price": 999.99,
+    "stock": 10
   },
   {
     "itemId": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
     "name": "Smartphone",
-    "price": 699.99
+    "price": 699.99,
+    "stock": 25
   }
 ]
 ```
@@ -109,7 +111,8 @@ Accept: application/json
 {
   "itemId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
   "name": "Laptop",
-  "price": 999.99
+  "price": 999.99,
+  "stock": 10
 }
 ```
 
@@ -159,10 +162,11 @@ Content-Type: application/json
   "items": [
     {
       "itemId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-      "name": "Laptop",
+      "itemName": "Laptop",
+      "itemPrice": 999.99,
       "quantity": 2,
-      "pricePerUnit": 999.99,
-      "subtotal": 1999.98
+      "subtotal": 1999.98,
+      "stock": 10
     }
   ],
   "totalItems": 2,
@@ -245,10 +249,11 @@ Content-Type: application/json
   "items": [
     {
       "itemId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-      "name": "Laptop",
+      "itemName": "Laptop",
+      "itemPrice": 999.99,
       "quantity": 5,
-      "pricePerUnit": 999.99,
-      "subtotal": 4999.95
+      "subtotal": 4999.95,
+      "stock": 10
     }
   ],
   "totalItems": 5,
@@ -395,19 +400,18 @@ Content-Type: application/json
 {
   "orderId": "550e8400-e29b-41d4-a716-446655440000",
   "userId": "user123",
-  "orderNumber": 1,
   "items": [
     {
       "itemId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-      "name": "Laptop",
+      "itemName": "Laptop",
+      "itemPrice": 999.99,
       "quantity": 2,
-      "pricePerUnit": 999.99,
-      "subtotal": 1999.98
+      "subtotal": 1999.98,
+      "stock": 10
     }
   ],
-  "subtotal": 1999.98,
-  "discountAmount": 0.00,
   "totalAmount": 1999.98,
+  "discountAmount": 0.00,
   "couponCode": null,
   "paymentStatus": "PAID",
   "createdAt": "2025-12-28T10:30:00.123Z"
@@ -431,19 +435,18 @@ Content-Type: application/json
 {
   "orderId": "660e8400-e29b-41d4-a716-446655440000",
   "userId": "user123",
-  "orderNumber": 6,
   "items": [
     {
       "itemId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-      "name": "Laptop",
+      "itemName": "Laptop",
+      "itemPrice": 999.99,
       "quantity": 1,
-      "pricePerUnit": 999.99,
-      "subtotal": 999.99
+      "subtotal": 999.99,
+      "stock": 10
     }
   ],
-  "subtotal": 999.99,
-  "discountAmount": 100.00,
   "totalAmount": 899.99,
+  "discountAmount": 100.00,
   "couponCode": "SAVE10-005",
   "paymentStatus": "PAID",
   "createdAt": "2025-12-28T10:35:00.456Z"
@@ -535,19 +538,18 @@ Accept: application/json
   {
     "orderId": "660e8400-e29b-41d4-a716-446655440000",
     "userId": "user123",
-    "orderNumber": 6,
     "items": [
       {
         "itemId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-        "name": "Laptop",
+        "itemName": "Laptop",
+        "itemPrice": 999.99,
         "quantity": 1,
-        "pricePerUnit": 999.99,
-        "subtotal": 999.99
+        "subtotal": 999.99,
+        "stock": 10
       }
     ],
-    "subtotal": 999.99,
-    "discountAmount": 100.00,
     "totalAmount": 899.99,
+    "discountAmount": 100.00,
     "couponCode": "SAVE10-005",
     "paymentStatus": "PAID",
     "createdAt": "2025-12-28T10:35:00.456Z"
@@ -555,19 +557,18 @@ Accept: application/json
   {
     "orderId": "550e8400-e29b-41d4-a716-446655440000",
     "userId": "user123",
-    "orderNumber": 1,
     "items": [
       {
         "itemId": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
-        "name": "Smartphone",
+        "itemName": "Smartphone",
+        "itemPrice": 699.99,
         "quantity": 2,
-        "pricePerUnit": 699.99,
-        "subtotal": 1399.98
+        "subtotal": 1399.98,
+        "stock": 25
       }
     ],
-    "subtotal": 1399.98,
-    "discountAmount": 0.00,
     "totalAmount": 1399.98,
+    "discountAmount": 0.00,
     "couponCode": null,
     "paymentStatus": "PAID",
     "createdAt": "2025-12-28T09:30:00.123Z"

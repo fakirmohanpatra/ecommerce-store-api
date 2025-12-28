@@ -1,5 +1,6 @@
 package com.ecommerce.store.controller;
 
+import com.ecommerce.store.dto.CouponListResponse;
 import com.ecommerce.store.dto.CouponResponse;
 import com.ecommerce.store.service.AdminService;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
  * REST API for public Coupon operations.
  *
  * API Contract:
+ * - GET /api/coupons - List all generated coupon codes
  * - GET /api/coupons/active - Get currently active coupon (for users to see available discount)
  */
 @RestController
@@ -47,5 +49,26 @@ public class CouponController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(coupon);
+    }
+
+    /**
+     * List all generated coupon codes.
+     *
+     * GET /api/coupons
+     *
+     * Response:
+     * {
+     *   "coupons": ["SAVE10-005", "SAVE10-010", "SAVE10-015"],
+     *   "totalGenerated": 3
+     * }
+     *
+     * This endpoint allows users to see all available coupon codes
+     * that have been generated (though only one can be active at a time).
+     */
+    @GetMapping
+    public ResponseEntity<CouponListResponse> getAllCoupons() {
+
+        CouponListResponse coupons = adminService.getAllCoupons();
+        return ResponseEntity.ok(coupons);
     }
 }

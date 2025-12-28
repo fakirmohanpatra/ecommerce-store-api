@@ -44,10 +44,16 @@ public class OrderServiceImpl implements OrderService {
             throw new IllegalArgumentException("Cannot checkout with empty cart");
         }
         
-        // 2. Validate all items still exist
+        // 2. Validate all items still exist and have sufficient stock
         for (CartItem cartItem : cart.getItems()) {
             if (!itemRepository.exists(cartItem.getItemId())) {
                 throw new IllegalArgumentException("Item no longer available: " + cartItem.getItemId());
+            }
+            
+            Item item = itemRepository.findById(cartItem.getItemId()).orElseThrow();
+            if (item.getStock() < cartItem.getQuantity()) {
+                throw new IllegalArgumentException("Insufficient stock for item: " + cartItem.getItemId() + 
+                    ". Requested: " + cartItem.getQuantity() + ", Available: " + item.getStock());
             }
         }
         
@@ -90,7 +96,12 @@ public class OrderServiceImpl implements OrderService {
         // 6. Save order and get order number
         int orderNumber = orderRepository.save(order);
         
-        // 7. Check if Nth order → generate new coupon
+        // 7. Decrease stock for all ordered items
+        for (CartItem cartItem : cart.getItems()) {
+            itemRepository.decreaseStock(cartItem.getItemId(), cartItem.getQuantity());
+        }
+        
+        // 8. Check if Nth order → generate new coupon
         if (orderNumber % nthOrder == 0) {
             couponRepository.generate(orderNumber);
         }
@@ -147,12 +158,19 @@ public class OrderServiceImpl implements OrderService {
      * Convert CartItem to CartItemResponse DTO.
      */
     private CartItemResponse toCartItemResponse(CartItem item) {
+        // Fetch current stock from item repository (stock at time of order, not current)
+        // For order history, we show the stock level that was available when the order was placed
+        int stockAtOrderTime = itemRepository.findById(item.getItemId())
+                .map(Item::getStock)
+                .orElse(0); // Default to 0 if item not found
+        
         return new CartItemResponse(
                 item.getItemId(),
                 item.getItemName(),
                 item.getPrice(),
                 item.getQuantity(),
-                item.getSubtotal()
+                item.getSubtotal(),
+                stockAtOrderTime
         );
     }
 }

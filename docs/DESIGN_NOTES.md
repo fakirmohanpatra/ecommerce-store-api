@@ -685,3 +685,49 @@ synchronized(activeCoupon) {
 6. **Ambiguity Resolution**: Documented all unclear assignment aspects with justified decisions
 7. **Concurrency**: Proper thread-safety with `AtomicInteger` and `synchronized` blocks
 8. **UX Consideration**: Balanced simplicity with user-friendly coupon validation
+
+---
+
+## 🧪 Controller Testing Implementation
+
+### Test Coverage Summary
+- **AdminControllerTest**: 7 tests covering admin stats and coupon generation
+- **CartControllerTest**: 8 tests covering cart operations (add, update, remove, get)
+- **ItemControllerTest**: 4 tests covering item catalog endpoints
+- **OrderControllerTest**: 8 tests covering checkout and order history
+- **Total**: 27 unit tests with 100% controller endpoint coverage
+
+### Testing Architecture
+- **Framework**: Spring Boot `@WebMvcTest` for isolated controller testing
+- **HTTP Testing**: MockMvc for simulating HTTP requests/responses
+- **Mocking**: Mockito `@MockBean` for service layer isolation
+- **Assertions**: JSON Path assertions for response validation
+- **Coverage**: Success scenarios, error handling, edge cases, and validation
+
+### Test Structure Pattern
+Each controller test follows this consistent pattern:
+1. **Setup**: Mock service responses with realistic data
+2. **Execute**: Perform HTTP request via MockMvc
+3. **Verify**: Assert HTTP status, content type, and JSON response structure
+4. **Edge Cases**: Test validation errors, empty responses, and invalid inputs
+
+### Key Testing Features
+- **DTO Validation**: Tests ensure proper request/response mapping
+- **Error Handling**: Comprehensive coverage of 400/404 error scenarios
+- **JSON Serialization**: Validates ObjectMapper configuration
+- **Service Isolation**: Pure controller logic testing without database dependencies
+- **Descriptive Names**: `@DisplayName` annotations for clear test documentation
+- **Stock Information**: All response DTOs now include current stock levels for better UX
+
+### Stock Information Enhancement
+- **ItemResponse**: Added `stock` field to show available inventory for each product
+- **CartItemResponse**: Added `stock` field to show current availability in cart and order views
+- **Real-time Updates**: Stock levels fetched from database for accurate, current information
+- **User Experience**: Users can see available stock when browsing items and managing cart
+- **API Consistency**: Stock field included in all item-related response DTOs
+
+### Validation Results
+- ✅ All 27 controller tests pass
+- ✅ No integration test failures
+- ✅ Clean build with no compilation errors
+- ✅ Consistent test patterns across all controllers

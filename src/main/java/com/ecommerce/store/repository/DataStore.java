@@ -65,6 +65,7 @@ public class DataStore {
         item.setItemId(itemId);
         item.setName(name);
         item.setPrice(price);
+        item.setStock(10); // Give each item initial stock of 10
         items.put(itemId, item);
     }
     

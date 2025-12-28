@@ -20,4 +20,5 @@ public class CartItemResponse {
     private BigDecimal itemPrice;
     private Integer quantity;
     private BigDecimal subtotal;  // itemPrice * quantity
+    private int stock;  // current available stock
 }

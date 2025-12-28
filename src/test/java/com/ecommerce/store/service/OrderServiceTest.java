@@ -61,6 +61,7 @@ class OrderServiceTest {
 
         when(cartRepository.findByUserId(userId)).thenReturn(Optional.of(cart));
         when(itemRepository.exists(any(UUID.class))).thenReturn(true);
+        when(itemRepository.findById(any(UUID.class))).thenReturn(Optional.of(createTestItem()));
         when(orderRepository.save(any(Order.class))).thenReturn(1);
 
         // When
@@ -88,6 +89,7 @@ class OrderServiceTest {
 
         when(cartRepository.findByUserId(userId)).thenReturn(Optional.of(cart));
         when(itemRepository.exists(any(UUID.class))).thenReturn(true);
+        when(itemRepository.findById(any(UUID.class))).thenReturn(Optional.of(createTestItem()));
         when(couponRepository.validateAndUse(couponCode)).thenReturn(CouponValidationResult.VALID);
         when(orderRepository.save(any(Order.class))).thenReturn(1);
 
@@ -113,6 +115,7 @@ class OrderServiceTest {
 
         when(cartRepository.findByUserId(userId)).thenReturn(Optional.of(cart));
         when(itemRepository.exists(any(UUID.class))).thenReturn(true);
+        when(itemRepository.findById(any(UUID.class))).thenReturn(Optional.of(createTestItem()));
         when(orderRepository.save(any(Order.class))).thenReturn(5); // 5th order
 
         // When
@@ -131,6 +134,7 @@ class OrderServiceTest {
 
         when(cartRepository.findByUserId(userId)).thenReturn(Optional.of(cart));
         when(itemRepository.exists(any(UUID.class))).thenReturn(true);
+        when(itemRepository.findById(any(UUID.class))).thenReturn(Optional.of(createTestItem()));
         when(orderRepository.save(any(Order.class))).thenReturn(3); // 3rd order
 
         // When
@@ -205,6 +209,7 @@ class OrderServiceTest {
 
         when(cartRepository.findByUserId(userId)).thenReturn(Optional.of(cart));
         when(itemRepository.exists(any(UUID.class))).thenReturn(true);
+        when(itemRepository.findById(any(UUID.class))).thenReturn(Optional.of(createTestItem()));
         when(couponRepository.validateAndUse(couponCode)).thenReturn(CouponValidationResult.INVALID_CODE);
 
         // When & Then
@@ -226,6 +231,7 @@ class OrderServiceTest {
 
         when(cartRepository.findByUserId(userId)).thenReturn(Optional.of(cart));
         when(itemRepository.exists(any(UUID.class))).thenReturn(true);
+        when(itemRepository.findById(any(UUID.class))).thenReturn(Optional.of(createTestItem()));
         when(couponRepository.validateAndUse(couponCode)).thenReturn(CouponValidationResult.ALREADY_USED);
 
         // When & Then
@@ -306,5 +312,14 @@ class OrderServiceTest {
         order.setPaymentStatus(PaymentStatus.PAID);
         order.setItems(new ArrayList<>());
         return order;
+    }
+
+    private Item createTestItem() {
+        Item item = new Item();
+        item.setItemId(UUID.randomUUID());
+        item.setName("Test Item");
+        item.setPrice(BigDecimal.valueOf(50.00));
+        item.setStock(10); // Sufficient stock
+        return item;
     }
 }

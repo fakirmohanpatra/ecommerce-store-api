@@ -39,7 +39,8 @@ public class ItemServiceImpl implements ItemService {
         return new ItemResponse(
                 item.getItemId(),
                 item.getName(),
-                item.getPrice()
+                item.getPrice(),
+                item.getStock()
         );
     }
 }

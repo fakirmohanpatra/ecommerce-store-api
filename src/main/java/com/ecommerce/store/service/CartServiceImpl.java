@@ -67,9 +67,6 @@ public class CartServiceImpl implements CartService {
         // Save cart
         cartRepository.save(cart);
         
-        // Decrease stock after successful cart addition
-        itemRepository.decreaseStock(itemId);
-        
         return toCartResponse(cart);
     }
     
@@ -159,12 +156,18 @@ public class CartServiceImpl implements CartService {
      * Convert CartItem entity to CartItemResponse DTO.
      */
     private CartItemResponse toCartItemResponse(CartItem item) {
+        // Fetch current stock from item repository
+        int currentStock = itemRepository.findById(item.getItemId())
+                .map(Item::getStock)
+                .orElse(0); // Default to 0 if item not found (shouldn't happen in normal flow)
+        
         return new CartItemResponse(
                 item.getItemId(),
                 item.getItemName(),
                 item.getPrice(),
                 item.getQuantity(),
-                item.getSubtotal()
+                item.getSubtotal(),
+                currentStock
         );
     }
 }

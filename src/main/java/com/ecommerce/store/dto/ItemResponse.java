@@ -18,4 +18,5 @@ public class ItemResponse {
     private UUID itemId;
     private String name;
     private BigDecimal price;
+    private int stock;
 }
