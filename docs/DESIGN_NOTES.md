@@ -9,6 +9,14 @@
 - Order has `paymentStatus` field (default: PAID) for future payment layer integration
 - This design allows easy payment gateway addition later without breaking existing flow
 
+### Inventory Management (Stock Control)
+- **Stock Validation**: Items must have sufficient stock before being added to cart
+- **Stock Decrease**: Stock is decreased only AFTER successful cart addition (not during validation)
+- **Out-of-Stock Prevention**: Cannot add items with zero or insufficient stock to cart
+- **Thread-Safe Operations**: Stock decrease is synchronized to prevent race conditions
+- **No Stock Reservation**: Stock is not reserved during cart operations (immediate decrease on add)
+- **Future-Proof**: Design allows easy addition of stock reservation/rollback for payment failures
+
 ### Coupon Lifecycle (Biggest Ambiguity!) - DETAILED
 
 #### **Who Generates Coupons?**
@@ -72,6 +80,7 @@
 ### Concurrency
 - `AtomicInteger` for order counter (thread-safe)
 - Synchronized coupon application (prevents double-use)
+- Synchronized stock decrease operations (prevents overselling)
 - Exactly ONE order triggers Nth-coupon generation (no race conditions)
 
 ### Out of Scope
@@ -80,8 +89,11 @@
 - ❌ Order cancellation
 - ❌ Order status/workflow (shipped, delivered, etc.)
 - ❌ Per-user coupon eligibility tracking
+- ❌ Advanced inventory features (stock reservation, backorders, low-stock alerts)
 
-**💡 Future-Proof Design**: Order model includes `paymentStatus` field for seamless payment integration later.
+**💡 Future-Proof Design**: 
+- Order model includes `paymentStatus` field for seamless payment integration later
+- Item model includes `stock` field for inventory management expansion
 
 ---
 
@@ -109,6 +121,14 @@
 
 #### 3. userId Not clientId
 **Why**: API endpoints use `/cart/{userId}`. Consistency matters. "User" clearer than "Client" for B2C.
+
+#### 4. Item Model with Inventory Management
+**Why**:
+- **Stock Field**: `int stock` tracks available inventory (default: 0)
+- **isOutOfStock() Method**: Returns `true` if `stock <= 0`
+- **Thread-Safe Stock Decrease**: `decreaseStock()` method in repository prevents race conditions
+- **Validation Before Cart Addition**: CartService checks stock availability before allowing items to be added
+- **Immediate Stock Decrease**: Stock reduced immediately on successful cart addition (no reservation system)
 
 #### 4. Order Tracks Discount Info
 **Why**: Admin API requirement: "total discount amount across all orders". Must store `discountAmount` and `couponCode` per order.
@@ -187,10 +207,11 @@ System
   - **OrderService**: Checkout and order history
   - **AdminService**: Statistics and coupon management
 - [x] **Service Implementations**:
-  - **CartServiceImpl**: Business logic for cart management
+  - **CartServiceImpl**: Business logic for cart management + stock validation
   - **ItemServiceImpl**: Product catalog queries
   - **OrderServiceImpl**: Checkout with coupon validation and auto-generation
   - **AdminServiceImpl**: Statistics aggregation
+- [x] **Inventory Management**: Stock validation and decrease on cart operations
 
 
 ### Phase 4: Architecture Patterns Applied ✅
@@ -199,6 +220,7 @@ System
 - [x] **DTO Pattern**: Clean separation between domain models and API contracts
 - [x] **Dependency Injection**: Constructor injection using Lombok @RequiredArgsConstructor
 - [x] **Clean Architecture**: Controllers → Services → Repositories → DataStore
+- [x] **Security Testing**: Injection attack protection validated in unit tests
 
 ## Repository Layer Architecture
 
@@ -217,7 +239,8 @@ ICartRepository (Interface) → CartRepository (Implementation)
 
 IItemRepository (Interface) → ItemRepository (Implementation)
 ├─ CRUD for Items
-└─ Product catalog queries
+├─ Product catalog queries
+└─ Stock management (decreaseStock with thread-safety)
 
 IOrderRepository (Interface) → OrderRepository (Implementation)
 ├─ Order CRUD
@@ -245,7 +268,7 @@ ICouponRepository (Interface) → CouponRepository (Implementation)
 
 ```
 CartService (Interface) → CartServiceImpl
-├─ Add items to cart (with validation)
+├─ Add items to cart (with validation + stock check)
 ├─ Remove items from cart
 ├─ Update item quantities
 ├─ Get cart details

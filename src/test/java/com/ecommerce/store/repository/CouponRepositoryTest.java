@@ -179,6 +179,71 @@ class CouponRepositoryTest {
         assertFalse(result);
     }
 
+    @Test
+    @DisplayName("Should get all generated coupon codes")
+    void getAllGenerated_ReturnsCouponCodes() {
+        // Given
+        dataStore.generatedCoupons.add("CODE001");
+        dataStore.generatedCoupons.add("CODE002");
+        dataStore.generatedCoupons.add("CODE003");
+
+        // When
+        var result = couponRepository.getAllGenerated();
+
+        // Then
+        assertEquals(3, result.size());
+        assertTrue(result.contains("CODE001"));
+        assertTrue(result.contains("CODE002"));
+        assertTrue(result.contains("CODE003"));
+    }
+
+    @Test
+    @DisplayName("Should handle injection attacks and special characters in coupon codes")
+    void validateAndUse_SpecialCharactersInCode_HandlesSafely() {
+        // Given - Test with potentially dangerous input
+        Coupon coupon = createTestCoupon("SAFE-CODE-123", 5);
+        dataStore.activeCoupon = coupon;
+
+        // Test various special characters that could be used in injection attacks
+        String[] maliciousCodes = {"SAFE-CODE-123<script>", "SAFE-CODE-123' OR '1'='1", "SAFE-CODE-123; DROP TABLE;"};
+
+        for (String maliciousCode : maliciousCodes) {
+            // When
+            CouponValidationResult result = couponRepository.validateAndUse(maliciousCode);
+
+            // Then - Should return INVALID_CODE, not crash or allow injection
+            assertEquals(CouponValidationResult.INVALID_CODE, result,
+                "Should safely handle malicious input: " + maliciousCode);
+        }
+
+        // Original coupon should remain unused
+        assertFalse(dataStore.activeCoupon.isUsed());
+    }
+
+    @Test
+    @DisplayName("Should handle whitespace in coupon codes")
+    void validateAndUse_WhitespaceInCode_HandlesProperly() {
+        // Given - Test with whitespace handling
+        Coupon coupon = createTestCoupon("VALID-CODE", 5);
+        dataStore.activeCoupon = coupon;
+
+        // Test various whitespace scenarios
+        String[] whitespaceCodes = {" VALID-CODE ", "  VALID-CODE", "VALID-CODE  ", "\tVALID-CODE\n"};
+
+        for (String whitespaceCode : whitespaceCodes) {
+            // When
+            CouponValidationResult result = couponRepository.validateAndUse(whitespaceCode);
+
+            // Then - Should return INVALID_CODE for codes with extra whitespace
+            // (assuming the system doesn't trim input - if it does, this test would need adjustment)
+            assertEquals(CouponValidationResult.INVALID_CODE, result,
+                "Should handle whitespace input properly: '" + whitespaceCode + "'");
+        }
+
+        // Original coupon should remain unused
+        assertFalse(dataStore.activeCoupon.isUsed());
+    }
+
     private Coupon createTestCoupon(String code, int orderNumber) {
         Coupon coupon = new Coupon();
         coupon.setCode(code);

@@ -34,6 +34,11 @@ public class CartServiceImpl implements CartService {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new IllegalArgumentException("Item not found: " + itemId));
         
+        // Check stock availability
+        if (item.isOutOfStock()) {
+            throw new IllegalArgumentException("Item is out of stock: " + itemId);
+        }
+        
         // Get or create cart
         Cart cart = cartRepository.getOrCreate(userId);
         
@@ -61,6 +66,9 @@ public class CartServiceImpl implements CartService {
         
         // Save cart
         cartRepository.save(cart);
+        
+        // Decrease stock after successful cart addition
+        itemRepository.decreaseStock(itemId);
         
         return toCartResponse(cart);
     }

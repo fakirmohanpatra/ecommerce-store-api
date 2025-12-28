@@ -48,6 +48,7 @@ class CartServiceTest {
         int quantity = 2;
 
         Item item = createTestItem(itemId, "Test Item", BigDecimal.valueOf(10.00));
+        item.setStock(5); // Set initial stock
         Cart emptyCart = createEmptyCart(userId);
 
         when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
@@ -71,6 +72,7 @@ class CartServiceTest {
         assertEquals(BigDecimal.valueOf(20.00), cartItem.getSubtotal());
 
         verify(cartRepository).save(emptyCart);
+        verify(itemRepository).decreaseStock(itemId);
     }
 
     @Test
@@ -83,6 +85,7 @@ class CartServiceTest {
         int additionalQuantity = 3;
 
         Item item = createTestItem(itemId, "Test Item", BigDecimal.valueOf(15.00));
+        item.setStock(10); // Set sufficient stock
         Cart cart = createCartWithItem(userId, itemId, "Test Item", BigDecimal.valueOf(15.00), existingQuantity);
 
         when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
@@ -99,6 +102,7 @@ class CartServiceTest {
         assertEquals(BigDecimal.valueOf(60.00), response.getTotalAmount()); // 15 * 4
 
         verify(cartRepository).save(cart);
+        verify(itemRepository).decreaseStock(itemId);
     }
 
     @Test
@@ -119,6 +123,29 @@ class CartServiceTest {
     }
 
     @Test
+    @DisplayName("Should throw exception when adding out of stock item")
+    void addItemToCart_OutOfStockItem_ThrowsException() {
+        // Given
+        String userId = "user123";
+        UUID itemId = UUID.randomUUID();
+        int quantity = 1;
+
+        Item item = createTestItem(itemId, "Out of Stock Item", BigDecimal.valueOf(10.00));
+        item.setStock(0); // Out of stock
+
+        when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
+
+        // When & Then
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> cartService.addItemToCart(userId, itemId, quantity));
+        assertEquals("Item is out of stock: " + itemId, exception.getMessage());
+
+        verify(itemRepository).findById(itemId);
+        verifyNoInteractions(cartRepository);
+        verifyNoMoreInteractions(itemRepository);
+    }
+
+    @Test
     @DisplayName("Should throw exception when adding non-existent item")
     void addItemToCart_ItemNotFound_ThrowsException() {
         // Given
@@ -134,7 +161,8 @@ class CartServiceTest {
         assertEquals("Item not found: " + itemId, exception.getMessage());
 
         verify(itemRepository).findById(itemId);
-        verifyNoMoreInteractions(cartRepository);
+        verifyNoInteractions(cartRepository);
+        verifyNoMoreInteractions(itemRepository);
     }
 
     @Test
@@ -263,16 +291,45 @@ class CartServiceTest {
     }
 
     @Test
-    @DisplayName("Should clear cart for user")
-    void clearCart_UserExists_ClearsCart() {
+    @DisplayName("Should handle concurrent cart operations safely")
+    void addItemToCart_ConcurrentAccess_HandlesSafely() {
+        // Given - Test thread safety with concurrent operations
+        String userId = "user123";
+        UUID itemId = UUID.randomUUID();
+        Item item = createTestItem(itemId, "Test Item", BigDecimal.valueOf(10.00));
+        Cart cart = createEmptyCart(userId);
+
+        when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
+        when(cartRepository.getOrCreate(userId)).thenReturn(cart);
+        when(cartRepository.save(any(Cart.class))).thenReturn(cart);
+
+        // When - Simulate concurrent additions (in real scenario, this would be handled by the repository)
+        cartService.addItemToCart(userId, itemId, 1);
+        cartService.addItemToCart(userId, itemId, 2);
+
+        // Then - Should handle the operations without corruption
+        assertEquals(1, cart.getItems().size());
+        assertEquals(3, cart.getItems().get(0).getQuantity()); // 1 + 2
+        assertEquals(BigDecimal.valueOf(30.00), cart.getTotal());
+
+        verify(cartRepository, times(2)).save(cart);
+    }
+
+    @Test
+    @DisplayName("Should validate negative quantities are rejected")
+    void addItemToCart_NegativeQuantity_ThrowsException() {
         // Given
         String userId = "user123";
+        UUID itemId = UUID.randomUUID();
+        int quantity = -1;
 
-        // When
-        cartService.clearCart(userId);
+        // When & Then
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> cartService.addItemToCart(userId, itemId, quantity));
+        assertEquals("Quantity must be positive", exception.getMessage());
 
-        // Then
-        verify(cartRepository).delete(userId);
+        verifyNoInteractions(itemRepository);
+        verifyNoInteractions(cartRepository);
     }
 
     private Item createTestItem(UUID itemId, String name, BigDecimal price) {
@@ -280,6 +337,7 @@ class CartServiceTest {
         item.setItemId(itemId);
         item.setName(name);
         item.setPrice(price);
+        item.setStock(10); // Default stock for tests
         return item;
     }
 

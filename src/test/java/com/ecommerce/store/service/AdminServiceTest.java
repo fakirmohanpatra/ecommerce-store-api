@@ -73,7 +73,7 @@ class AdminServiceTest {
     }
 
     @Test
-    @DisplayName("Should return statistics with no active coupon")
+    @DisplayName("Should return statistics with null active coupon when no coupon is active")
     void getStatistics_NoActiveCoupon_ReturnsNull() {
         // Given
         when(orderRepository.getTotalItemsPurchased()).thenReturn(5);

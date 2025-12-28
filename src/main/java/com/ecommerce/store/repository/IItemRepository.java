@@ -37,6 +37,12 @@ public interface IItemRepository {
     boolean exists(UUID itemId);
     
     /**
+     * Decrease stock for an item by 1.
+     * Used when item is added to cart.
+     */
+    void decreaseStock(UUID itemId);
+    
+    /**
      * Get total count of items.
      */
     int count();

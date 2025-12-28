@@ -114,6 +114,23 @@ class ItemRepositoryTest {
         assertFalse(exists);
     }
 
+    @Test
+    @DisplayName("Should decrease item stock and show out of stock when quantity reaches zero")
+    void decreaseStock_ItemStockDecreasesAndOutOfStockWhenZero() {
+        // Given
+        Item item = createTestItem("Headphones", BigDecimal.valueOf(199.99));
+        item.setStock(2);
+        dataStore.items.put(item.getItemId(), item);
+
+        // When
+        itemRepository.decreaseStock(item.getItemId());
+        itemRepository.decreaseStock(item.getItemId());
+
+        // Then
+        assertEquals(0, dataStore.items.get(item.getItemId()).getStock());
+        assertTrue(dataStore.items.get(item.getItemId()).isOutOfStock());
+    }
+
     private Item createTestItem(String name, BigDecimal price) {
         Item item = new Item();
         item.setItemId(UUID.randomUUID());
