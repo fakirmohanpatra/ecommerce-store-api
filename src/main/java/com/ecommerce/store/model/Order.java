@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -84,9 +84,9 @@ public class Order {
     
     /**
      * Timestamp when the order was created.
-     * Using LocalDateTime for simplicity (no timezone complexity needed).
+     * Using Instant to represent absolute point in time (UTC-based).
      */
-    private LocalDateTime createdAt;
+    private Instant createdAt;
     
     /**
      * Payment status of this order.

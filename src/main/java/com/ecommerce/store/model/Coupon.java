@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Represents a discount coupon.
@@ -95,7 +95,7 @@ public class Coupon {
      * Timestamp when this coupon was created.
      * Useful for displaying "valid until" or audit purposes.
      */
-    private LocalDateTime createdAt;
+    private Instant createdAt;
     
     /**
      * Checks if this coupon is valid for use.
