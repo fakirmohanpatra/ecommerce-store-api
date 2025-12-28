@@ -188,6 +188,16 @@ Traditional ecommerce systems often lack sophisticated discount management. This
    - **Swagger UI**: http://localhost:8080/swagger-ui/index.html
    - **API Documentation**: http://localhost:8080/v3/api-docs
 
+### Pre-loaded Sample Data
+
+The application automatically loads **10 sample products** on startup with initial stock of 10 units each:
+
+- **Electronics**: Laptop ($999.99), Smartphone ($699.99), Wireless Headphones ($199.99), Smart Watch ($299.99)
+- **Books**: Design Patterns Book ($49.99), Clean Code Book ($39.99), The Pragmatic Programmer ($44.99)
+- **Appliances**: Coffee Maker ($79.99), Blender ($129.99), Air Fryer ($89.99)
+
+You can immediately start testing cart operations, checkout, and coupon generation without creating products first.
+
 ### Sample API Calls
 
 ```bash
