@@ -3,6 +3,8 @@ package com.ecommerce.store.controller;
 import com.ecommerce.store.dto.AdminStatsResponse;
 import com.ecommerce.store.dto.CouponListResponse;
 import com.ecommerce.store.dto.CouponResponse;
+import com.ecommerce.store.service.AdminService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,7 +19,10 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/api/admin")
+@RequiredArgsConstructor
 public class AdminController {
+    
+    private final AdminService adminService;
     
     /**
      * Get store statistics.
@@ -41,8 +46,8 @@ public class AdminController {
     @GetMapping("/stats")
     public ResponseEntity<AdminStatsResponse> getStatistics() {
         
-        // TODO: Implement in service layer
-        return ResponseEntity.ok().build();
+        AdminStatsResponse stats = adminService.getStatistics();
+        return ResponseEntity.ok(stats);
     }
     
     /**
@@ -59,8 +64,8 @@ public class AdminController {
     @GetMapping("/coupons")
     public ResponseEntity<CouponListResponse> getAllCoupons() {
         
-        // TODO: Implement in service layer
-        return ResponseEntity.ok().build();
+        CouponListResponse coupons = adminService.getAllCoupons();
+        return ResponseEntity.ok(coupons);
     }
     
     /**
@@ -81,8 +86,11 @@ public class AdminController {
     @GetMapping("/coupons/active")
     public ResponseEntity<CouponResponse> getActiveCoupon() {
         
-        // TODO: Implement in service layer
-        return ResponseEntity.ok().build();
+        CouponResponse coupon = adminService.getActiveCoupon();
+        if (coupon == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(coupon);
     }
     
     /**
@@ -98,7 +106,7 @@ public class AdminController {
     @PostMapping("/coupons/generate")
     public ResponseEntity<CouponResponse> generateCoupon() {
         
-        // TODO: Implement in service layer
-        return ResponseEntity.ok().build();
+        CouponResponse coupon = adminService.generateCoupon();
+        return ResponseEntity.ok(coupon);
     }
 }

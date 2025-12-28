@@ -2,7 +2,9 @@ package com.ecommerce.store.controller;
 
 import com.ecommerce.store.dto.CheckoutRequest;
 import com.ecommerce.store.dto.OrderResponse;
+import com.ecommerce.store.service.OrderService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,7 +19,10 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/orders")
+@RequiredArgsConstructor
 public class OrderController {
+    
+    private final OrderService orderService;
     
     /**
      * Checkout - Create order from cart.
@@ -47,8 +52,11 @@ public class OrderController {
     @PostMapping("/checkout")
     public ResponseEntity<OrderResponse> checkout(@Valid @RequestBody CheckoutRequest request) {
         
-        // TODO: Implement in service layer
-        return ResponseEntity.ok().build();
+        OrderResponse response = orderService.checkout(
+                request.getUserId(), 
+                request.getCouponCode()
+        );
+        return ResponseEntity.ok(response);
     }
     
     /**
@@ -61,7 +69,7 @@ public class OrderController {
     @GetMapping("/{userId}")
     public ResponseEntity<List<OrderResponse>> getOrderHistory(@PathVariable String userId) {
         
-        // TODO: Implement in service layer
-        return ResponseEntity.ok().build();
+        List<OrderResponse> orders = orderService.getOrderHistory(userId);
+        return ResponseEntity.ok(orders);
     }
 }

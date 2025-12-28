@@ -3,7 +3,9 @@ package com.ecommerce.store.controller;
 import com.ecommerce.store.dto.AddToCartRequest;
 import com.ecommerce.store.dto.CartResponse;
 import com.ecommerce.store.dto.UpdateQuantityRequest;
+import com.ecommerce.store.service.CartService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,7 +23,10 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/cart")
+@RequiredArgsConstructor
 public class CartController {
+    
+    private final CartService cartService;
     
     /**
      * Add item to cart.
@@ -41,8 +46,12 @@ public class CartController {
             @PathVariable String userId,
             @Valid @RequestBody AddToCartRequest request) {
         
-        // TODO: Implement in service layer
-        return ResponseEntity.ok().build();
+        CartResponse response = cartService.addItemToCart(
+                userId, 
+                request.getItemId(), 
+                request.getQuantity()
+        );
+        return ResponseEntity.ok(response);
     }
     
     /**
@@ -57,8 +66,8 @@ public class CartController {
             @PathVariable String userId,
             @PathVariable UUID itemId) {
         
-        // TODO: Implement in service layer
-        return ResponseEntity.ok().build();
+        CartResponse response = cartService.removeItemFromCart(userId, itemId);
+        return ResponseEntity.ok(response);
     }
     
     /**
@@ -79,8 +88,12 @@ public class CartController {
             @PathVariable UUID itemId,
             @Valid @RequestBody UpdateQuantityRequest request) {
         
-        // TODO: Implement in service layer
-        return ResponseEntity.ok().build();
+        CartResponse response = cartService.updateItemQuantity(
+                userId, 
+                itemId, 
+                request.getQuantity()
+        );
+        return ResponseEntity.ok(response);
     }
     
     /**
@@ -93,8 +106,8 @@ public class CartController {
     @GetMapping("/{userId}")
     public ResponseEntity<CartResponse> getCart(@PathVariable String userId) {
         
-        // TODO: Implement in service layer
-        return ResponseEntity.ok().build();
+        CartResponse response = cartService.getCart(userId);
+        return ResponseEntity.ok(response);
     }
     
     /**
@@ -107,7 +120,7 @@ public class CartController {
     @DeleteMapping("/{userId}")
     public ResponseEntity<Void> clearCart(@PathVariable String userId) {
         
-        // TODO: Implement in service layer
+        cartService.clearCart(userId);
         return ResponseEntity.noContent().build();
     }
 }

@@ -1,6 +1,8 @@
 package com.ecommerce.store.controller;
 
 import com.ecommerce.store.dto.ItemResponse;
+import com.ecommerce.store.service.ItemService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,7 +18,10 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/items")
+@RequiredArgsConstructor
 public class ItemController {
+    
+    private final ItemService itemService;
     
     /**
      * Get all items (product catalog).
@@ -38,8 +43,8 @@ public class ItemController {
     @GetMapping
     public ResponseEntity<List<ItemResponse>> getAllItems() {
         
-        // TODO: Implement in service layer
-        return ResponseEntity.ok().build();
+        List<ItemResponse> items = itemService.getAllItems();
+        return ResponseEntity.ok(items);
     }
     
     /**
@@ -52,7 +57,7 @@ public class ItemController {
     @GetMapping("/{itemId}")
     public ResponseEntity<ItemResponse> getItemById(@PathVariable UUID itemId) {
         
-        // TODO: Implement in service layer
-        return ResponseEntity.ok().build();
+        ItemResponse item = itemService.getItemById(itemId);
+        return ResponseEntity.ok(item);
     }
 }

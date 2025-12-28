@@ -98,18 +98,158 @@ System
   └─ AtomicInteger orderCounter
 ```
 
-## Next Phase: In-Memory Store
+## Implementation Progress
 
-**Structure**:
-```java
-ConcurrentHashMap<String, Cart> cartStore;      // key = userId
-ConcurrentHashMap<String, Order> orderStore;    // key = orderId
-AtomicInteger orderCounter;                     // for Nth order logic
-Coupon activeCoupon;                            // single active coupon
-List<String> allGeneratedCoupons;               // for admin reporting
+### Phase 1: Foundation Layer ✅ COMPLETED
+- [x] Models (Item, Cart, CartItem, Order, Coupon, PaymentStatus)
+- [x] **Refactored Repository Layer** - Separated into focused repositories
+  - **DataStore**: Centralized in-memory storage (thread-safe containers)
+  - **ICartRepository → CartRepository**: Cart management
+  - **IItemRepository → ItemRepository**: Item CRUD operations
+  - **IOrderRepository → OrderRepository**: Order operations + statistics
+  - **ICouponRepository → CouponRepository**: Coupon lifecycle + validation
+- [x] Seed data (10 sample items auto-loaded on startup)
+
+**Design Benefits**:
+- ✅ Interface-based: Dependency injection on interfaces, not concrete classes
+- ✅ Single Responsibility: Each repository handles ONE entity
+- ✅ Lightweight: Clear, focused classes (~50-100 lines each)
+- ✅ Testable: Easy to mock individual repositories
+- ✅ Maintainable: Changes isolated to specific repository
+- ✅ Thread-safe: ConcurrentHashMap + AtomicInteger + synchronized methods
+
+### Phase 3: REST API Layer ✅ COMPLETED (phase 3 completed before 2)
+- [x] **CartController**: Cart CRUD endpoints
+- [x] **ItemController**: Product listing endpoints
+- [x] **OrderController**: Checkout and order history endpoints
+- [x] **AdminController**: Statistics and coupon admin endpoints
+- [x] All controllers wired with service layer
+- [x] Request/Response DTOs properly mapped
+
+### Phase 2: Service Layer ✅ COMPLETED
+- [x] DTOs (AddToCartRequest, CartResponse, ItemResponse, OrderResponse, etc.)
+- [x] **Service Interfaces**:
+  - **CartService**: Cart operations (add, remove, update, get, clear)
+  - **ItemService**: Product catalog operations
+  - **OrderService**: Checkout and order history
+  - **AdminService**: Statistics and coupon management
+- [x] **Service Implementations**:
+  - **CartServiceImpl**: Business logic for cart management
+  - **ItemServiceImpl**: Product catalog queries
+  - **OrderServiceImpl**: Checkout with coupon validation and auto-generation
+  - **AdminServiceImpl**: Statistics aggregation
+
+
+### Phase 4: Architecture Patterns Applied ✅
+- [x] **Repository Pattern**: Interface-based repositories with implementations
+- [x] **Service Layer Pattern**: Business logic separated from controllers
+- [x] **DTO Pattern**: Clean separation between domain models and API contracts
+- [x] **Dependency Injection**: Constructor injection using Lombok @RequiredArgsConstructor
+- [x] **Clean Architecture**: Controllers → Services → Repositories → DataStore
+
+## Repository Layer Architecture
+
+**Separation of Concerns - Clean Architecture**:
+
+```
+DataStore (Component)
+├─ Raw storage: ConcurrentHashMap + AtomicInteger
+├─ Seed data initialization
+└─ Shared by all repositories
+
+ICartRepository (Interface) → CartRepository (Implementation)
+├─ Cart CRUD
+├─ Get-or-create pattern
+└─ Clear cart after checkout
+
+IItemRepository (Interface) → ItemRepository (Implementation)
+├─ CRUD for Items
+└─ Product catalog queries
+
+IOrderRepository (Interface) → OrderRepository (Implementation)
+├─ Order CRUD
+├─ Order counter management
+└─ Admin statistics
+
+ICouponRepository (Interface) → CouponRepository (Implementation)
+├─ Single active coupon management
+├─ Generate/validate/apply
+└─ Coupon history tracking
 ```
 
-**Why ConcurrentHashMap**: Thread-safe for concurrent access without external synchronization.
+**Why Interface-Based Repositories**:
+- Dependency Inversion Principle (DIP)
+- Services depend on abstractions, not concrete implementations
+- Enables easy mocking for unit tests
+- Allows swapping implementations (e.g., move to JPA later)
+- Single Responsibility Principle (SRP) - each class has ONE clear purpose
+- Lightweight: 50-100 lines per implementation
+- Easy to test, mock, and maintain
+
+## Service Layer Architecture
+
+**Clean Separation - Business Logic Isolated**:
+
+```
+CartService (Interface) → CartServiceImpl
+├─ Add items to cart (with validation)
+├─ Remove items from cart
+├─ Update item quantities
+├─ Get cart details
+└─ Clear cart
+
+ItemService (Interface) → ItemServiceImpl
+├─ Get all items (product catalog)
+└─ Get item by ID
+
+OrderService (Interface) → OrderServiceImpl
+├─ Checkout with coupon validation
+├─ Calculate discounts
+├─ Generate coupons on Nth order
+└─ Get order history
+
+AdminService (Interface) → AdminServiceImpl
+├─ Calculate statistics
+├─ Get coupon history
+└─ Generate coupons manually
+```
+
+**Service Layer Responsibilities**:
+- Business logic and validation
+- Coordinate multiple repositories
+- DTO transformations (Entity ↔ DTO)
+- Transaction orchestration
+- Error handling and validation
+
+---
+
+## In-Memory Store Structure
+
+**Implemented in DataStore Component**:
+---
+
+## In-Memory Store Structure
+
+**Implemented in DataStore Component**:
+```java
+ConcurrentHashMap<UUID, Item> items;            // Product catalog (itemId → Item)
+ConcurrentHashMap<String, Cart> carts;          // User carts (userId → Cart)
+ConcurrentHashMap<UUID, Order> orders;          // All orders (orderId → Order)
+AtomicInteger orderCounter;                     // Global Nth order counter
+volatile Coupon activeCoupon;                   // Single system-wide coupon
+List<String> generatedCoupons;                  // For admin reporting
+```
+volatile Coupon activeCoupon;                   // Single system-wide coupon
+List<String> allGeneratedCoupons;               // For admin reporting
+```
+
+**Thread-Safety Guarantees**:
+- ConcurrentHashMap: Thread-safe reads/writes
+- AtomicInteger: Thread-safe increment for order counting
+- synchronized methods: Coupon generation/application
+- volatile: Ensures activeCoupon visibility across threads
+
+---
 
 ## Critical Design Decisions & Assumptions
 
