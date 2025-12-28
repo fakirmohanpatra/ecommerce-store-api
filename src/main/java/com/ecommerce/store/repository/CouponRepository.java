@@ -1,6 +1,7 @@
 package com.ecommerce.store.repository;
 
 import com.ecommerce.store.model.Coupon;
+import com.ecommerce.store.model.CouponValidationResult;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -64,27 +65,27 @@ public class CouponRepository implements ICouponRepository {
      * Validate and mark coupon as used.
      * 
      * @param couponCode The code to validate
-     * @return true if valid and successfully marked used, false otherwise
+     * @return VALID if successfully validated and marked used, otherwise the failure reason
      * 
      * Thread-safe: Prevents double-use by concurrent checkouts.
      */
     @Override
-    public synchronized boolean validateAndUse(String couponCode) {
+    public synchronized CouponValidationResult validateAndUse(String couponCode) {
         if (dataStore.activeCoupon == null) {
-            return false; // No active coupon
+            return CouponValidationResult.NO_ACTIVE_COUPON;
         }
         
         if (!dataStore.activeCoupon.getCode().equals(couponCode)) {
-            return false; // Wrong code
+            return CouponValidationResult.INVALID_CODE;
         }
         
         if (dataStore.activeCoupon.isUsed()) {
-            return false; // Already used
+            return CouponValidationResult.ALREADY_USED;
         }
         
         // Mark as used (consume the coupon)
         dataStore.activeCoupon.setUsed(true);
-        return true;
+        return CouponValidationResult.VALID;
     }
     
     /**

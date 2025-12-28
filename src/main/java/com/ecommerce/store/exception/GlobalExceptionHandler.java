@@ -62,13 +62,13 @@ public class GlobalExceptionHandler {
     }
     
     /**
-     * Handle IllegalArgumentException (e.g., invalid inputs).
+     * Handle coupon validation errors.
      */
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
+    @ExceptionHandler(CouponValidationException.class)
+    public ResponseEntity<ErrorResponse> handleCouponValidationException(CouponValidationException ex) {
         ErrorResponse errorResponse = new ErrorResponse(
                 ex.getMessage(),
-                "INVALID_ARGUMENT",
+                "COUPON_INVALID",
                 Instant.now()
         );
         

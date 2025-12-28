@@ -2,6 +2,7 @@ package com.ecommerce.store.service;
 
 import com.ecommerce.store.dto.CartItemResponse;
 import com.ecommerce.store.dto.OrderResponse;
+import com.ecommerce.store.exception.CouponValidationException;
 import com.ecommerce.store.model.*;
 import com.ecommerce.store.repository.ICartRepository;
 import com.ecommerce.store.repository.ICouponRepository;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Service implementation for Order/Checkout operations.
@@ -58,9 +58,15 @@ public class OrderServiceImpl implements OrderService {
         
         // 4. Apply coupon if provided
         if (couponCode != null && !couponCode.trim().isEmpty()) {
-            boolean couponValid = couponRepository.validateAndUse(couponCode);
-            if (!couponValid) {
-                throw new IllegalArgumentException("Invalid or already used coupon code: " + couponCode);
+            CouponValidationResult validationResult = couponRepository.validateAndUse(couponCode);
+            if (validationResult != CouponValidationResult.VALID) {
+                String errorMessage = switch (validationResult) {
+                    case NO_ACTIVE_COUPON -> "No active coupon available.";
+                    case INVALID_CODE -> "Invalid coupon code: " + couponCode + ". Please check the active coupon code.";
+                    case ALREADY_USED -> "Coupon code already used: " + couponCode + ". Each coupon can only be used once.";
+                    default -> "Invalid coupon code: " + couponCode;
+                };
+                throw new CouponValidationException(errorMessage);
             }
             
             // Calculate discount

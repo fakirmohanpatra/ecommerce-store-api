@@ -1,6 +1,7 @@
 package com.ecommerce.store.repository;
 
 import com.ecommerce.store.model.Coupon;
+import com.ecommerce.store.model.CouponValidationResult;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,9 +29,9 @@ public interface ICouponRepository {
      * Validate and mark coupon as used.
      * 
      * @param couponCode The code to validate
-     * @return true if valid and successfully marked used, false otherwise
+     * @return VALID if successfully validated and marked used, otherwise the failure reason
      */
-    boolean validateAndUse(String couponCode);
+    CouponValidationResult validateAndUse(String couponCode);
     
     /**
      * Check if a coupon code is valid (exists and not used).

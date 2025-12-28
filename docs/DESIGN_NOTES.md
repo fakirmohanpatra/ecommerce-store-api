@@ -9,12 +9,65 @@
 - Order has `paymentStatus` field (default: PAID) for future payment layer integration
 - This design allows easy payment gateway addition later without breaking existing flow
 
-### Coupon Lifecycle (Biggest Ambiguity!)
-- **ONE system-wide active coupon** at a time (not per-user)
-- Generated automatically on **global Nth order** (5th, 10th, 15th...)
-- **Visible to ALL users**, first-come-first-served
-- **Persists until used** or replaced by next Nth coupon
-- Old coupons **expire** when new one generates
+### Coupon Lifecycle (Biggest Ambiguity!) - DETAILED
+
+#### **Who Generates Coupons?**
+- **System Auto-Generation**: Coupons are generated automatically by the system (OrderServiceImpl during checkout)
+- **Admin Manual Generation**: Admin can also manually generate coupons via `POST /api/admin/coupons/generate`
+- **NOT User-Generated**: Users cannot create their own coupons
+
+#### **When Are Coupons Created?**
+- **Auto-Generation Trigger**: Automatically created when the **Nth order** completes checkout (default: every 5th order)
+  - Example: Order #5, #10, #15, #20... each triggers a new coupon
+  - Uses **global system order counter** (not per-user)
+- **Manual Trigger**: Admin can force-generate at any time (replaces existing active coupon)
+- **Timing**: Created AFTER order is successfully saved (not during validation)
+
+#### **How Long Are Coupons Active?**
+- **No Fixed Expiration Time**: Coupons don't have a time-based expiry (no "valid for 24 hours")
+- **Persists Until**:
+  1. **Used by any user** during checkout → Marked as `used=true`, becomes inactive
+  2. **Replaced by next Nth-order coupon** → Old coupon expires, new one becomes active
+- **Example Timeline**:
+  ```
+  Order #5  → Coupon "SAVE10-005" generated (active)
+  Order #6  → "SAVE10-005" still active (not used)
+  Order #7  → User applies "SAVE10-005" → Marked used, expires
+  Order #8-9 → No active coupon
+  Order #10 → Coupon "SAVE10-010" generated (active)
+  ```
+
+#### **What Happens If Coupon Is NOT Used?**
+- **Scenario 1: Next Nth Order Before Use**
+  - Old coupon gets **replaced/expired** when new one generates
+  - Example: "SAVE10-005" unused → Order #10 completes → "SAVE10-005" expires, "SAVE10-010" becomes active
+- **Scenario 2: Remains Unused Between Nth Orders**
+  - Coupon stays active and available to ALL users
+  - Example: "SAVE10-010" generated → Orders 11-14 happen → Coupon still available
+- **No Accumulation**: Only ONE coupon active at a time (old ones don't stack)
+
+#### **What Happens When Coupon IS Used?**
+- **Marked as Used**: `isUsed` flag set to `true` (in CouponRepository.validateAndUse())
+- **Becomes Inactive**: Cannot be used by another user
+- **Discount Applied**: 10% discount calculated on order subtotal
+- **Stored in Order**: Order records `couponCode` and `discountAmount` for audit/reporting
+- **Next Availability**: No active coupon until next Nth order generates a new one
+
+#### **Auto-Generation Details**
+- **Logic**: `if (orderNumber % nthOrder == 0)` in OrderServiceImpl.checkout()
+- **Code Format**: `SAVE10-{orderNumber}` (e.g., "SAVE10-005", "SAVE10-010")
+- **Thread-Safe**: Uses `AtomicInteger` for order counter + synchronized coupon methods
+- **Race Condition Protection**: Exactly ONE order triggers generation (no duplicates)
+
+#### **Key Assumption: ONE System-Wide Coupon**
+- **NOT per-user coupons** (every user doesn't get their own 5th-order coupon)
+- **Global visibility**: All users see the same active coupon
+- **First-come-first-served**: Whoever checks out first with the code gets the discount
+- **Why This Design?**
+  - Simpler concurrency (single coupon to synchronize)
+  - Matches assignment FAQ: "can be requested by every user"
+  - Avoids complex per-user order tracking
+  - Realistic for promotional campaigns (limited-use codes)
 
 ### Concurrency
 - `AtomicInteger` for order counter (thread-safe)
@@ -348,15 +401,71 @@ Return OK   Return error
 - **Availability**: Any user can apply it to their current order
 - **Expiration**: Used once → expires → next coupon generated at next Nth order
 
+#### Detailed Coupon States & Lifecycle
+
+**State 1: NO_ACTIVE_COUPON (Initial State)**
+- **When**: System starts, or after a coupon is used and before next Nth order
+- **User Experience**: GET /api/coupons/active returns 404
+- **What Happens**: Users can checkout without coupon (no discount)
+- **Why This State Exists**: Natural gap between coupons being consumed and regenerated
+
+**State 2: ACTIVE & UNUSED (Available)**
+- **When**: Nth order completes, coupon generated (`isUsed=false`)
+- **User Experience**: Coupon code visible to all users, can be applied at checkout
+- **Duration**: Persists until used OR replaced by next Nth order
+- **Example**: Order #5 generates "SAVE10-005" → Available through orders 6-9 (if unused)
+- **Why This State Exists**: Gives window of opportunity for users to claim discount
+
+**State 3: ACTIVE & USED (Consumed)**
+- **When**: User successfully applies coupon during checkout (`isUsed=true`)
+- **User Experience**: Returns ALREADY_USED error to subsequent users
+- **What Happens**: Discount applied to that one order, coupon becomes inactive
+- **Why This State Exists**: Enforces single-use constraint, prevents fraud
+
+**State 4: EXPIRED (Replaced by New Coupon)**
+- **When**: New Nth order generates new coupon (old one discarded)
+- **User Experience**: Old code returns INVALID_CODE error
+- **Example**: "SAVE10-005" expires when Order #10 generates "SAVE10-010"
+- **Why This State Exists**: Prevents accumulation, keeps system simple
+
+#### Coupon Validation Results - Are All 4 States Needed?
+
+**Current Enum: CouponValidationResult**
+```java
+VALID,              // ✅ Coupon exists, not used, correct code
+NO_ACTIVE_COUPON,   // ❌ No coupon in system
+INVALID_CODE,       // ❌ Code doesn't match active coupon
+ALREADY_USED        // ❌ Coupon exists but already consumed
+```
+
+**Analysis: YES, All 4 States Are Necessary**
+
+| State | User Scenario | Error Message Needed | Can We Merge? |
+|-------|---------------|---------------------|---------------|
+| **VALID** | Happy path - discount applied | None (success) | No - core success case |
+| **NO_ACTIVE_COUPON** | User tries coupon when none exists (e.g., order #3, no coupon yet) | "No active coupon available" | ❌ Can't merge - different from invalid code |
+| **INVALID_CODE** | User types wrong code, or uses expired code (e.g., tries "SAVE10-005" when "SAVE10-010" is active) | "Invalid coupon code" | ❌ Can't merge - user typo vs no coupon are different |
+| **ALREADY_USED** | User tries to use coupon that another user just consumed | "Coupon has already been used" | ❌ Can't merge - critical feedback for race conditions |
+
+**Why We Can't Simplify to 2 States (VALID/INVALID):**
+- **UX Clarity**: "No coupon exists" vs "Wrong code" vs "Someone else used it" are distinct user errors
+- **Debugging**: Helps admins/developers diagnose issues (system state vs user input error)
+- **Security**: Distinguishes between expired coupons and never-existed coupons (prevents guessing)
+- **Concurrency Feedback**: ALREADY_USED specifically addresses race conditions (two users checking out simultaneously)
+
+**Recommendation: Keep All 4 States** ✅
+
 **Example Flow**:
 ```
-Order #4 completes → No coupon
+Order #4 completes → NO_ACTIVE_COUPON (no discount yet)
 Order #5 completes → Coupon "SAVE10-005" generated, available to everyone
-User A (on their 2nd order) applies "SAVE10-005" → Success! Coupon consumed.
-Order #6-9 complete → No coupon available
+User A (on their 2nd order) applies "SAVE10-005" → VALID → Discount applied → ALREADY_USED
+User B tries "SAVE10-005" → ALREADY_USED error
+Order #6-9 complete → NO_ACTIVE_COUPON (coupon was used)
 Order #10 completes → Coupon "SAVE10-010" generated
-User B ignores it → Coupon stays available
-Order #15 completes → Old coupon expires, new "SAVE10-015" generated
+User C tries "SAVE10-005" → INVALID_CODE (old/expired)
+User C tries "SAVE10-010" → VALID → Discount applied
+Order #15 completes → "SAVE10-010" expires, new "SAVE10-015" generated
 ```
 
 **Why This Model**:
@@ -481,15 +590,63 @@ synchronized(activeCoupon) {
 
 ---
 
-### 8. Coupon Application Scenarios
+### 8. Coupon Application Scenarios & Edge Cases
 
-| Scenario | Outcome | Coupon Status After |
-|----------|---------|---------------------|
-| Applied + Order successful | Discount given | `used=true`, expires |
-| Applied but checkout fails (validation error) | No order created | Coupon remains available |
-| Valid coupon, user doesn't apply | No discount | Coupon remains available |
-| Applied + Payment fails (out of scope) | N/A - no payment in assignment | N/A |
-| Applied + Order cancelled (out of scope) | N/A - no cancellation in assignment | N/A |
+**Complete State Transition Table**:
+
+| Scenario | Starting State | User Action | Validation Result | Order Created? | Coupon State After | Why This Decision |
+|----------|----------------|-------------|-------------------|----------------|-------------------|-------------------|
+| **Happy Path** | ACTIVE & UNUSED | Apply valid code | VALID | ✅ Yes (with discount) | USED | Core requirement - single-use discount |
+| **No Coupon Generated Yet** | NO_ACTIVE_COUPON | Tries any code | NO_ACTIVE_COUPON | ✅ Yes (no discount) | NO_ACTIVE_COUPON | Allow checkout without coupon (graceful degradation) |
+| **Wrong Code** | ACTIVE & UNUSED | Apply invalid code | INVALID_CODE | ❌ No (validation fails) | ACTIVE & UNUSED | Preserve coupon for correct user (typo protection) |
+| **Race Condition** | ACTIVE & UNUSED | Two users apply simultaneously | VALID (1st user) / ALREADY_USED (2nd user) | ✅ Yes for 1st / ❌ No for 2nd | USED after 1st | Synchronized validation prevents double-use |
+| **Expired Coupon** | EXPIRED (replaced) | Apply old code | INVALID_CODE | ❌ No | EXPIRED | Old codes don't work after new generation |
+| **Checkout Without Coupon** | Any state | Empty/null coupon | N/A (not validated) | ✅ Yes (no discount) | Unchanged | Coupon is optional at checkout |
+| **Unused Until Next Nth** | ACTIVE & UNUSED | No one applies | N/A | ✅ Orders continue | EXPIRED (replaced by new) | Prevents coupon accumulation |
+
+**Edge Cases & Assumptions Explained**:
+
+#### 1. **Checkout Fails After Coupon Validation**
+- **Scenario**: Coupon validated (marked used), but order creation fails (e.g., database error)
+- **Current Behavior**: Coupon stays marked as used (not rolled back)
+- **Why**: Assignment has no database/transactions, rollback is out of scope
+- **Future Improvement**: Wrap in transaction or use try-catch to revert coupon state
+
+#### 2. **Nth Order User Doesn't Get Automatic Discount**
+- **Scenario**: Order #5 completes → Coupon generated → But that order itself doesn't get discount
+- **Why**: Coupon becomes available AFTER order #5 succeeds (for orders 6-9)
+- **Alternative Considered**: Auto-apply to Nth order (rejected - violates "user applies" requirement)
+
+#### 3. **Coupon Discount > Order Total**
+- **Scenario**: Order subtotal $50, 10% discount = $5 off → Total $45 ✅
+- **Edge Case**: What if rounding error makes total negative?
+- **Handling**: `BigDecimal` math prevents this, but added check: `totalAmount = max(subtotal - discount, 0)`
+
+#### 4. **Multiple Concurrent Nth Orders**
+- **Scenario**: Two orders complete simultaneously, both are the 10th order
+- **Handling**: `AtomicInteger.incrementAndGet()` ensures exactly ONE is #10
+- **Result**: Only one order triggers coupon generation (no duplicates)
+
+#### 5. **Payment Failure (OUT OF SCOPE)**
+- **Assignment**: No payment gateway integration
+- **Current**: Order created → paymentStatus = PAID → Cart cleared → Coupon consumed (if applied)
+- **If Payment Was Added**: Set paymentStatus = PENDING → Call gateway → On failure: Keep cart, restore coupon? (NOT IMPLEMENTED)
+
+#### 6. **Order Cancellation (OUT OF SCOPE)**
+- **Assignment**: Orders are immutable once created
+- **If Cancellation Was Added**: Should coupon be restored? New requirement discussion needed
+
+#### 7. **Admin Manual Coupon Generation**
+- **Scenario**: Admin generates coupon outside Nth-order cycle
+- **Behavior**: Replaces any existing active coupon (old one expires)
+- **Why**: Admin override capability (e.g., marketing campaign)
+
+**Why These Decisions?**
+- **Simplicity**: In-memory, no transactions → Keep logic straightforward
+- **Scope Adherence**: Focus on assignment requirements, avoid over-engineering
+- **Concurrency**: Thread-safe operations prevent race conditions
+- **User Experience**: Clear error messages, graceful degradation
+- **Future-Proof**: Payment status field allows easy gateway integration later
 
 **Note**: Order cancellation and payment failure are **OUT OF SCOPE** per assignment requirements.
 
