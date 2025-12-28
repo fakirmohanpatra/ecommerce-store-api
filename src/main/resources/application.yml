@@ -10,6 +10,10 @@ app:
     nth-order: 5  # Generate coupon on every 5th order
     discount-percentage: 10  # 10% discount
 
+# CORS Configuration
+cors:
+  allowed-origins: http://localhost:4200,https://yourdomain.com,https://www.yourdomain.com
+
 # Swagger/OpenAPI Configuration
 springdoc:
   api-docs:
