@@ -10,6 +10,7 @@ A comprehensive, production-ready ecommerce backend system built with Spring Boo
 ## 📋 Table of Contents
 
 - [🎯 Project Overview](#-project-overview)
+- [📸 Screenshots and Demo](#-screenshots-and-demo)
 - [🏗️ System Architecture](#️-system-architecture)
 - [✨ Key Features](#-key-features)
 - [🛠️ Technology Stack](#️-technology-stack)
@@ -22,6 +23,10 @@ A comprehensive, production-ready ecommerce backend system built with Spring Boo
 - [🤝 Contributing](#-contributing)
 
 ---
+
+## 📸 Screenshots and Demo
+
+View screenshots and demo of the working code [here](https://drive.google.com/drive/folders/1CGlXze19wJEZSu0B10pidosrS7oIrbnC?usp=drive_link).
 
 ## 🎯 Project Overview
 
@@ -186,7 +191,7 @@ Traditional ecommerce systems often lack sophisticated discount management. This
 4. **Verify Installation**
    - **API Base URL**: http://localhost:8080
    - **Swagger UI**: http://localhost:8080/swagger-ui/index.html
-   - **API Documentation**: http://localhost:8080/v3/api-docs
+   - **API Documentation**: http://localhost:8080/api-docs
 
 ### Pre-loaded Sample Data
 
