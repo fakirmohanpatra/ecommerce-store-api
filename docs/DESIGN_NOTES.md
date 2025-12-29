@@ -5,7 +5,7 @@
 ### Business Rules
 - **Single System-Wide Coupon**: One active coupon at a time, available to all users (first-come-first-served)
 - **Auto-Generated Coupons**: Every 5th order triggers new coupon generation
-- **Immediate Stock Decrease**: Stock reduced on cart addition (no reservation system)
+- **Stock Reduced on Checkout**: Stock is validated during cart operations but only reduced after successful order placement
 - **Payment Always Succeeds**: No payment gateway - orders default to PAID status
 - **In-Memory Storage**: No database required
 
@@ -86,11 +86,12 @@
 
 ### 5. Inventory Management
 
-**Decision**: Immediate stock decrease on cart addition
+**Decision**: Stock validation at cart, reduction at checkout
 **Why**:
-- Prevents overselling in concurrent scenarios
-- Simple and predictable behavior
-- No complex reservation/rollback logic needed
+- Stock checked for availability when adding to cart (validation only)
+- Actual stock reduction happens after successful order placement
+- Prevents overselling via checkout-time validation
+- Allows users to browse and add items without immediately locking inventory
 
 ### 6. Payment Integration
 
@@ -114,9 +115,8 @@ GET /api/items
 ```
 POST /api/cart (Add Item)
 ├── Validate item exists and has sufficient stock
-├── Decrease stock immediately (thread-safe)
 ├── Create CartItem snapshot with current price/name
-├── Add to user's cart
+├── Add to user's cart (or update quantity if already exists)
 └── Return updated cart with totals
 
 GET /api/cart/{userId}
@@ -130,12 +130,14 @@ GET /api/cart/{userId}
 ```
 POST /api/orders/checkout
 ├── Validate cart is not empty
-├── Validate coupon (if provided) - synchronized check
+├── Re-validate all items exist and have sufficient stock
+├── Calculate subtotal and apply coupon (if provided) - synchronized check
 ├── Create Order with CartItem snapshots
 ├── Set paymentStatus = PAID
 ├── Save order with auto-generated ID
-├── Clear user's cart
+├── Decrease stock for all ordered items
 ├── Check if Nth order → generate new coupon
+├── Clear user's cart
 └── Return order confirmation
 ```
 
@@ -183,10 +185,10 @@ Usage Logic:
 - **PaymentStatus Enum**: Future-proof for payment gateway integration
 
 ### Thread Safety
-- **ConcurrentHashMap**: Thread-safe data storage
+- **ConcurrentHashMap**: Thread-safe data storage for items, carts, orders, coupons
 - **AtomicInteger**: Thread-safe order counter
-- **Synchronized Methods**: Coupon validation and stock operations
-- **Volatile Fields**: Ensures coupon visibility across threads
+- **Synchronized Methods**: Coupon validation and usage (prevents double-use)
+- **Stock Operations**: Rely on ConcurrentHashMap's thread-safety (no additional synchronization)
 
 ### Repository Pattern
 - **Interface-Based**: Dependency injection on contracts
